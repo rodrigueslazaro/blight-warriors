@@ -47,6 +47,54 @@ int initialize_window(struct game *game) {
     return TRUE;
 }
 
+void render_attack(struct game *game, struct player *player) {
+    SDL_Surface *imageSurface = IMG_Load("./assets/imgs/attack.png");
+    SDL_Texture *imageTexture = SDL_CreateTextureFromSurface(game->renderer, imageSurface);
+    SDL_FreeSurface(imageSurface);
+    SDL_Rect dstrect = {player->p.x, player->p.y, 64, 64};
+    double angle;
+    if (player->up) {
+        angle = 0;
+        dstrect.y -= 20;
+    }
+    if (player->down) {
+        angle = 180;
+        dstrect.y += 50;
+    }
+    if (player->left) {
+        angle = 270;
+        dstrect.x -= 30;
+        dstrect.y += 10;
+    }
+    if (player->right) {
+        angle = 90;
+        dstrect.x += 30;
+        dstrect.y += 10;
+    }
+    SDL_Rect srcrect = {0, 0, 64, 64};
+    SDL_RendererFlip flip = SDL_FLIP_NONE;
+    SDL_RenderCopyEx(game->renderer, imageTexture, &srcrect, &dstrect, angle, NULL, flip);
+    SDL_RenderPresent(game->renderer);
+    SDL_Delay(100);
+    srcrect.x = 64;
+    SDL_RenderCopyEx(game->renderer, imageTexture, &srcrect, &dstrect, angle, NULL, flip);
+    SDL_RenderPresent(game->renderer);
+    SDL_Delay(100);
+    srcrect.x = 128;
+    SDL_RenderCopyEx(game->renderer, imageTexture, &srcrect, &dstrect, angle, NULL, flip);
+    SDL_RenderPresent(game->renderer);
+    SDL_Delay(100);
+}
+
+void spawn_monster(struct game *game, struct player player) {
+    SDL_Surface *imageSurface = IMG_Load("./assets/imgs/monster.png");
+    SDL_Texture *imageTexture = SDL_CreateTextureFromSurface(game->renderer, imageSurface);
+    SDL_FreeSurface(imageSurface);
+    SDL_RenderCopy(game->renderer, imageTexture, &player.s, &player.p);
+
+    SDL_RenderPresent(game->renderer); // swaps back buffer with front buffer   
+}
+
 void process_input(struct game *game, struct player *player) {
     SDL_Event event;
     SDL_PollEvent(&event);
@@ -74,6 +122,13 @@ void process_input(struct game *game, struct player *player) {
         case SDLK_d:
             player->right = TRUE;
             player->is_moving = TRUE;
+            break;
+        case SDLK_j:
+            render_attack(game, player);
+            break;
+        case SDLK_k:
+            struct player pcopy = *player;
+            spawn_monster(game, pcopy);
             break;
         case SDLK_SPACE:
             switch (game->game_state) {
@@ -160,13 +215,14 @@ void update(struct game *game, struct player *player) {
         player->s.y = sprite * 80;
         if (player->up)
             player->s.x = 192;
+        if (player->down)
+            player->s.x = 0;
         if (player->left)
             player->s.x = 64;
         if (player->right)
             player->s.x = 128;
     } else {
-        player->s.x = 0;
-        player->s.y = 0;
+        player->s.y = sprite * 0;
     }
         
 }
@@ -191,6 +247,8 @@ void setup(struct player *player) {
     player->is_moving = FALSE;
 }
 
+
+
 void render(struct game *game, struct player player) {
     SDL_SetRenderDrawColor(game->renderer, 0, 0, 0, 255);
     SDL_RenderClear(game->renderer);
@@ -204,7 +262,6 @@ void render(struct game *game, struct player player) {
     textRect.y = WINDOW_HEIGHT/2; // Y-coordinate
     textRect.w = textSurface->w;
     textRect.h = textSurface->h;
-
     SDL_RenderCopy(game->renderer, textTexture, NULL, &textRect);
 
     SDL_Surface *imageSurface = IMG_Load("./assets/imgs/player.png");
@@ -212,15 +269,6 @@ void render(struct game *game, struct player player) {
     SDL_FreeSurface(imageSurface);
     SDL_RenderCopy(game->renderer, imageTexture, &player.s, &player.p);
 
-    SDL_Rect player_render = {
-        (int)player.x,
-        (int)player.y,
-        (int)player.w,
-        (int)player.h
-    };
-
-    SDL_SetRenderDrawColor(game->renderer, 150, 20, 20, 255);
-    SDL_RenderFillRect(game->renderer, &player_render);
     SDL_RenderPresent(game->renderer); // swaps back buffer with front buffer
 }
 
@@ -242,7 +290,7 @@ int main() {
         process_input(&game, &player);
         switch (game.game_state) {
             case 0:
-                game.message = "Welcome to P0NG!";
+                game.message = "Welcome to the Blight!";
                 break;
             case 1:
                 game.message = " ";
