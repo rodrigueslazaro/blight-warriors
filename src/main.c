@@ -95,42 +95,13 @@ void spawn_monster(struct game *game, struct player player) {
     SDL_RenderPresent(game->renderer); // swaps back buffer with front buffer   
 }
 
-void process_input(struct game *game, struct player *player) {
-    SDL_Event event;
-    SDL_PollEvent(&event);
-    switch (event.type) {
-    case SDL_QUIT:
+void read_ui_interactions(SDL_Event event, struct game *game) {
+    if (event.type == SDL_QUIT ||
+       (event.type == SDL_KEYDOWN &&
+        event.key.keysym.sym == SDLK_ESCAPE))
         game->is_running = FALSE;
-        break;
-    case SDL_KEYDOWN:
-        switch (event.key.keysym.sym) {
-        case SDLK_ESCAPE:
-            game->is_running = FALSE;
-            break;
-        case SDLK_w:
-            player->up = TRUE;
-            player->is_moving = TRUE;
-            break;
-        case SDLK_s:
-            player->down = TRUE;
-            player->is_moving = TRUE;
-            break;
-        case SDLK_a:
-            player->left = TRUE;
-            player->is_moving = TRUE;
-            break;
-        case SDLK_d:
-            player->right = TRUE;
-            player->is_moving = TRUE;
-            break;
-        case SDLK_j:
-            render_attack(game, player);
-            break;
-        case SDLK_k:
-            struct player pcopy = *player;
-            spawn_monster(game, pcopy);
-            break;
-        case SDLK_SPACE:
+    if (event.type == SDL_KEYDOWN &&
+        event.key.keysym.sym == SDLK_SPACE) {
             switch (game->game_state) {
                 case 0:
                     game->game_state = 1;
@@ -142,32 +113,43 @@ void process_input(struct game *game, struct player *player) {
                     game->game_state = 1;
                     break;
             }
-            break;
-        }
-        break;
-    case SDL_KEYUP:
-        switch (event.key.keysym.sym) {
+    }
+}
+
+void update_player_action(SDL_Keycode key, int state, struct player *player) {
+    switch (key) {
         case SDLK_w:
-            player->up = FALSE;
-            player->is_moving = FALSE;
-            break;
-        case SDLK_s:
-            player->down = FALSE;
-            player->is_moving = FALSE;
-            break;
-        case SDLK_a:
-            player->left = FALSE;
-            player->is_moving = FALSE;
+            player->up = state;
             break;
         case SDLK_d:
-            player->right = FALSE;
-            player->is_moving = FALSE;
+            player->right = state;
             break;
-        }
-        break;
-    default:
-        break;
+        case SDLK_s:
+            player->down = state;
+            break;
+        case SDLK_a:
+            player->left = state;
+            break;
+        case SDLK_j:
+            player->attack = state;
+            break;
     }
+}
+
+void read_player_interactions(SDL_Event event, struct player *player) {
+    SDL_Keycode key = event.key.keysym.sym;
+    if (event.type == SDL_KEYDOWN)
+        update_player_action(key, TRUE, player);
+    if (event.type == SDL_KEYUP)
+        update_player_action(key, FALSE, player);
+}
+
+void process_input(struct game *game, struct player *player) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        read_ui_interactions(event, game);
+        read_player_interactions(event, player);
+    } 
 }
 
 int check_collision(struct player *p1, struct player *p2, struct ball *ball) {
@@ -198,20 +180,22 @@ void update(struct game *game, struct player *player) {
     if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME)
         SDL_Delay(time_to_wait);
     // get a delta time factor to update objects
-    float delta_time = (SDL_GetTicks() - game->last_frame_time) / 1000.0f;
+    float delta_time = (SDL_GetTicks() - game->last_frame_time) / 1000.0;
 
     if (player->up)
-        player->p.y -= 100 * delta_time;
+        player->p.y -= PLAYER_SPEED * delta_time;
     if (player->down)
-        player->p.y += 100 * delta_time;
+        player->p.y += PLAYER_SPEED * delta_time;
     if (player->left)
-        player->p.x -= 100 * delta_time;
+        player->p.x -= PLAYER_SPEED * delta_time;
     if (player->right)
-        player->p.x += 100 * delta_time;
+        player->p.x += PLAYER_SPEED * delta_time;
+    if (player->attack && (player->up ^ player->down ^ player->left ^ player->right))
+        render_attack(game, player);
 
     int seconds = SDL_GetTicks() / 250;
     int sprite = seconds % 3;
-    if (player->is_moving) {
+    if (player->up || player->right || player->down || player->left) {
         player->s.y = sprite * 80;
         if (player->up)
             player->s.x = 192;
@@ -244,7 +228,6 @@ void setup(struct player *player) {
     player->s.y = 0;
     player->s.w = 64;
     player->s.h = 80;
-    player->is_moving = FALSE;
 }
 
 

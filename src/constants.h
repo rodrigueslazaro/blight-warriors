@@ -7,4 +7,4 @@
 #define FPS 100
 #define FRAME_TARGET_TIME (1000/FPS)
 
-#define PLAYER_SPEED 100
+#define PLAYER_SPEED 300

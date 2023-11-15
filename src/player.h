@@ -9,7 +9,7 @@ struct player {
     int down;
     int left;
     int right;
+    int attack;
     SDL_Rect p;
     SDL_Rect s;
-    int is_moving;
 };
