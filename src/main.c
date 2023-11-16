@@ -6,6 +6,7 @@
 #include "./game.h"
 #include "./player.h"
 #include "./ball.h"
+#include "./darr.h"
 
 int initialize_window(struct game *game) {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -47,11 +48,11 @@ int initialize_window(struct game *game) {
     return TRUE;
 }
 
-void render_attack(struct game *game, struct player *player) {
+void render_attack(struct game *game, struct entity *player) {
     SDL_Surface *imageSurface = IMG_Load("./assets/imgs/attack.png");
     SDL_Texture *imageTexture = SDL_CreateTextureFromSurface(game->renderer, imageSurface);
     SDL_FreeSurface(imageSurface);
-    SDL_Rect dstrect = {player->p.x, player->p.y, 64, 64};
+    SDL_Rect dstrect = {player->position.x, player->position.y, 64, 64};
     double angle;
     if (player->up) {
         angle = 0;
@@ -86,13 +87,13 @@ void render_attack(struct game *game, struct player *player) {
     SDL_Delay(100);
 }
 
-void spawn_monster(struct game *game, struct player player) {
-    SDL_Surface *imageSurface = IMG_Load("./assets/imgs/monster.png");
-    SDL_Texture *imageTexture = SDL_CreateTextureFromSurface(game->renderer, imageSurface);
-    SDL_FreeSurface(imageSurface);
-    SDL_RenderCopy(game->renderer, imageTexture, &player.s, &player.p);
-
-    SDL_RenderPresent(game->renderer); // swaps back buffer with front buffer   
+void spawn_monster(struct entity *enemy) {
+    // int i=0;
+    // while (enemies[i].alive == TRUE) {
+    //     i++;
+    // }
+    // enemies[i].alive == TRUE;
+    enemy->alive = TRUE;
 }
 
 void read_ui_interactions(SDL_Event event, struct game *game) {
@@ -116,7 +117,7 @@ void read_ui_interactions(SDL_Event event, struct game *game) {
     }
 }
 
-void update_player_action(SDL_Keycode key, int state, struct player *player) {
+void update_player_action(SDL_Keycode key, int state, struct entity *player) {
     switch (key) {
         case SDLK_w:
             player->up = state;
@@ -136,7 +137,7 @@ void update_player_action(SDL_Keycode key, int state, struct player *player) {
     }
 }
 
-void read_player_interactions(SDL_Event event, struct player *player) {
+void read_player_interactions(SDL_Event event, struct entity *player) {
     SDL_Keycode key = event.key.keysym.sym;
     if (event.type == SDL_KEYDOWN)
         update_player_action(key, TRUE, player);
@@ -144,7 +145,7 @@ void read_player_interactions(SDL_Event event, struct player *player) {
         update_player_action(key, FALSE, player);
 }
 
-void process_input(struct game *game, struct player *player) {
+void process_input(struct game *game, struct entity *player) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         read_ui_interactions(event, game);
@@ -152,28 +153,42 @@ void process_input(struct game *game, struct player *player) {
     } 
 }
 
-int check_collision(struct player *p1, struct player *p2, struct ball *ball) {
-    // xpos + width 
-    if (ball->x+ball->w >= p2->x && ball->y >= p2->y && ball->y <= p2->y+p2->h){
-        ball->xspeed *= -1;
-        return TRUE;
+void check_monster_hit(struct entity *monster, struct entity *player) {
+    if (player->left &&
+        monster->position.x+32 >= player->position.x-64 &&
+        monster->position.y+32 >= player->position.y &&
+        monster->position.x+32 <= player->position.x &&
+        monster->position.y+32 <= player->position.y+80) {
+        monster->lives--;
+        monster->position.x -= 20;
     }
-    if (ball->x <= p1->x+p1->w && ball->y >= p1->y && ball->y <= p1->y+p1->h) {
-        ball->xspeed *= -1;
-        return TRUE;
+    if (player->right &&
+        monster->position.x+32 >= player->position.x+64 &&
+        monster->position.y+32 >= player->position.y &&
+        monster->position.x+32 <= player->position.x+128 &&
+        monster->position.y+32 <= player->position.y+80) {
+        monster->lives--;
+        monster->position.x += 20;
     }
-    if (ball->y+ball->h >= WINDOW_HEIGHT) {
-        ball->yspeed *= -1;
-        return TRUE;
+    if (player->up &&
+        monster->position.x+32 >= player->position.x &&
+        monster->position.y+32 >= player->position.y-80 &&
+        monster->position.x+32 <= player->position.x+64 &&
+        monster->position.y+32 <= player->position.y) {
+        monster->lives--;
+        monster->position.y -= 20;
     }
-    if (ball->y <= 0) {
-        ball->yspeed *= -1;
-        return TRUE;
+    if (player->down &&
+        monster->position.x+32 >= player->position.x &&
+        monster->position.y+32 >= player->position.y+80 &&
+        monster->position.x+32 <= player->position.x+64 &&
+        monster->position.y+32 <= player->position.y+160) {
+        monster->lives--;
+        monster->position.y += 20;
     }
-    return FALSE;
 }
 
-void update(struct game *game, struct player *player) {
+void update(struct game *game, struct entity *player, struct entity *monster) {
     // logic to keep a fixed timestamp
     // must waste some time until we reach the target time
     int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - game->last_frame_time);
@@ -181,61 +196,100 @@ void update(struct game *game, struct player *player) {
         SDL_Delay(time_to_wait);
     // get a delta time factor to update objects
     float delta_time = (SDL_GetTicks() - game->last_frame_time) / 1000.0;
-
+    char str[10];
+    sprintf(str, "%d", monster->lives);
+    strcpy(game->message, str);
     if (player->up)
-        player->p.y -= PLAYER_SPEED * delta_time;
+        player->position.y -= PLAYER_SPEED * delta_time;
     if (player->down)
-        player->p.y += PLAYER_SPEED * delta_time;
+        player->position.y += PLAYER_SPEED * delta_time;
     if (player->left)
-        player->p.x -= PLAYER_SPEED * delta_time;
+        player->position.x -= PLAYER_SPEED * delta_time;
     if (player->right)
-        player->p.x += PLAYER_SPEED * delta_time;
-    if (player->attack && (player->up ^ player->down ^ player->left ^ player->right))
+        player->position.x += PLAYER_SPEED * delta_time;
+    if (player->attack && (player->up ^ player->down ^ player->left ^ player->right)) {
         render_attack(game, player);
+        check_monster_hit(monster, player);
+        if (monster->lives <= 0) {
+            monster->alive = FALSE;
+        }
+    }
 
     int seconds = SDL_GetTicks() / 250;
     int sprite = seconds % 3;
     if (player->up || player->right || player->down || player->left) {
-        player->s.y = sprite * 80;
+        player->texture.y = sprite * 80;
         if (player->up)
-            player->s.x = 192;
+            player->texture.x = 192;
         if (player->down)
-            player->s.x = 0;
+            player->texture.x = 0;
         if (player->left)
-            player->s.x = 64;
+            player->texture.x = 64;
         if (player->right)
-            player->s.x = 128;
+            player->texture.x = 128;
     } else {
-        player->s.y = sprite * 0;
+        player->texture.y = sprite * 0;
     }
-        
+    if (monster->alive) {
+        monster->texture.x = sprite * 64;
+    } else {
+        monster->texture.x = sprite * 0;
+    }
+    monster->up = FALSE;
+    monster->right = FALSE;
+    monster->down = FALSE;
+    monster->left = FALSE;
+    if (player->position.x >= monster->position.x) {
+        monster->right = TRUE;
+        monster->position.x += PLAYER_SPEED/2 * delta_time;
+    }
+    if (player->position.x < monster->position.x) {
+        monster->left = TRUE;
+        monster->position.x -= PLAYER_SPEED/2 * delta_time;
+    }
+    if (player->position.y >= monster->position.y) {
+        monster->down = TRUE;
+        monster->position.y += PLAYER_SPEED/2 * delta_time;
+    }
+    if (player->position.y < monster->position.y) {
+        monster->up = TRUE;
+        monster->position.y -= PLAYER_SPEED/2 * delta_time;
+    }
 }
 
-void setup(struct player *player) {
-    player->x = 20;
-    player->y = 20;
-    player->w = 30;
-    player->h = 30;
+void setup(struct entity *player, struct entity *monster) {
     player->up = FALSE;
     player->down = FALSE;
     player->left = FALSE;
     player->right = FALSE;
-    player->p.x = 50;
-    player->p.y = 50;
-    player->p.w = 64;
-    player->p.h = 80;
-    player->s.x = 0;
-    player->s.y = 0;
-    player->s.w = 64;
-    player->s.h = 80;
+    player->position.x = 50;
+    player->position.y = 50;
+    player->position.w = 64;
+    player->position.h = 80;
+    player->texture.x = 0;
+    player->texture.y = 0;
+    player->texture.w = 64;
+    player->texture.h = 80;
+    player->alive = TRUE;
+    player->texture_name = "./assets/imgs/player.png";
+    monster->up = FALSE;
+    monster->down = FALSE;
+    monster->left = FALSE;
+    monster->right = FALSE;
+    monster->position.x = 100;
+    monster->position.y = 100;
+    monster->position.w = 64;
+    monster->position.h = 64;
+    monster->texture.x = 0;
+    monster->texture.y = 0;
+    monster->texture.w = 64;
+    monster->texture.h = 64;
+    monster->alive = TRUE;
+    monster->lives = 5;
+    monster->texture_name = "./assets/imgs/imp.png";
 }
 
-
-
-void render(struct game *game, struct player player) {
-    SDL_SetRenderDrawColor(game->renderer, 0, 0, 0, 255);
-    SDL_RenderClear(game->renderer);
-
+void render_message(struct game *game) {
     SDL_Color textColor = {255, 255, 255};
     SDL_Surface* textSurface = TTF_RenderText_Solid(game->font, game->message, textColor);
     SDL_Texture* textTexture = SDL_CreateTextureFromSurface(game->renderer, textSurface);
@@ -246,13 +300,24 @@ void render(struct game *game, struct player player) {
     textRect.w = textSurface->w;
     textRect.h = textSurface->h;
     SDL_RenderCopy(game->renderer, textTexture, NULL, &textRect);
+}
 
-    SDL_Surface *imageSurface = IMG_Load("./assets/imgs/player.png");
+void render_entity(struct game *game, struct entity entity) {
+    SDL_Surface *imageSurface = IMG_Load(entity.texture_name);
     SDL_Texture *imageTexture = SDL_CreateTextureFromSurface(game->renderer, imageSurface);
     SDL_FreeSurface(imageSurface);
-    SDL_RenderCopy(game->renderer, imageTexture, &player.s, &player.p);
+    SDL_RenderCopy(game->renderer, imageTexture, &entity.texture, &entity.position);
+}
 
-    SDL_RenderPresent(game->renderer); // swaps back buffer with front buffer
+void render(struct game *game, struct entity player, struct entity monster) {
+    SDL_SetRenderDrawColor(game->renderer, 0, 0, 0, 255);
+    SDL_RenderClear(game->renderer); 
+    if (player.alive)
+        render_entity(game, player);
+    if (monster.alive)
+        render_entity(game, monster);
+    render_message(game);
+    SDL_RenderPresent(game->renderer);
 }
 
 void destroy_window(struct game *game) {
@@ -265,26 +330,39 @@ int main() {
     struct game game = newGame();
     game.is_running = initialize_window(&game);
     game.font = TTF_OpenFont("./assets/fonts/bigblue.ttf", 24); // You need a .ttf file for your font
+    // dynamic_array *enemies = dynamic_array_create(sizeof(struct enemy));
+    // SDL_Rect p = {50, 50, 192, 64};
+    // SDL_Rect t = {0, 0, 192, 64};
+    // struct enemy e = newEnemy(p, t);
+    // dynamic_array_push_back(enemies, &e);
+    // SDL_Rect p = {50, 50, 192, 64};
+    // SDL_Rect t = {0, 0, 192, 64};
+    // struct enemy enemies[100];
+    // for (int i=0; i<100; i++) {
+    //     struct enemy e = newEnemy(p, t);
+    //     enemies[i] = e;
+    // }
+    struct entity monster;
 
-    struct player player;
-    setup(&player);
+    struct entity player;
+    setup(&player, &monster);
 
     while (game.is_running) {
         process_input(&game, &player);
         switch (game.game_state) {
             case 0:
-                game.message = "Welcome to the Blight!";
+                strcpy(game.message, "Welcome to the Blight!");
                 break;
             case 1:
-                game.message = " ";
+                strcpy(game.message, "");
                 game.last_frame_time = SDL_GetTicks(); // time since game began
-                update(&game, &player);
+                update(&game, &player, &monster);
                 break;
             case 2:
-                game.message = "[PAUSED]";
+                strcpy(game.message, "[PAUSED]");
                 break;
         }
-        render(&game, player);
+        render(&game, player, monster);
     }
 
     destroy_window(&game);

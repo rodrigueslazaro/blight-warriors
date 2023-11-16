@@ -8,7 +8,7 @@ struct game {
     float ball_multiplier;
     int last_frame_time;
     int game_state;
-    const char *message;
+    char message[100];
     TTF_Font *font;
     SDL_Window *window;
     SDL_Renderer *renderer;
@@ -19,7 +19,7 @@ struct game newGame() {
     newG.ball_multiplier = 1;
     newG.last_frame_time = 0;
     newG.game_state = 0;
-    newG.message = "";
+    strcpy(newG.message, "");
     newG.is_active = FALSE;
     newG.font = NULL;
     newG.window = NULL;

@@ -1,15 +1,15 @@
 #include <SDL2/SDL.h>
+#include "./constants.h"
 
-struct player {
-    float x;
-    float y;
-    float w;
-    float h;
+struct entity {
     int up;
     int down;
     int left;
     int right;
     int attack;
-    SDL_Rect p;
-    SDL_Rect s;
+    int alive;
+    int lives;
+    char *texture_name;
+    SDL_Rect position;
+    SDL_Rect texture;
 };

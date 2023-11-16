@@ -1,0 +1,54 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "./darr.h"
+
+#define INITIAL_CAPACITY 3
+
+typedef struct {
+    void *arr;
+    size_t size;
+    size_t capacity;
+    size_t item_size;
+} dynamic_array;
+
+dynamic_array* dynamic_array_create(size_t item_size) {
+    dynamic_array *d_array = malloc(sizeof(dynamic_array));
+    if (d_array) {
+        d_array->arr = malloc(INITIAL_CAPACITY * item_size);
+        if (d_array->arr) {
+            d_array->size = 0;
+            d_array->capacity = INITIAL_CAPACITY;
+            d_array->item_size = item_size;
+            return d_array;
+        }
+        free(d_array);
+    }
+    return NULL;
+}
+
+void dynamic_array_destroy(dynamic_array *d_array) {
+    if (d_array) {
+        free(d_array->arr);
+        free(d_array);
+    }
+}
+
+void dynamic_array_resize(dynamic_array *d_array, size_t new_capacity) {
+    if (d_array) {
+        d_array->arr = realloc(d_array->arr, new_capacity * d_array->item_size);
+        if (d_array->arr) {
+            d_array->capacity = new_capacity;
+        }
+    }
+}
+
+void dynamic_array_push_back(dynamic_array *d_array, const void *item) {
+    if (d_array) {
+        if (d_array->size >= d_array->capacity) {
+            dynamic_array_resize(d_array, d_array->capacity * 2);
+        }
+        memcpy((char *)d_array->arr + (d_array->size * d_array->item_size), item, d_array->item_size);
+        d_array->size++;
+    }
+}
