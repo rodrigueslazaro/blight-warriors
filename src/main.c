@@ -78,17 +78,19 @@ void render_attack(struct game *game, struct entity *player) {
     }
     SDL_Rect srcrect = {0, 0, 64, 64};
     SDL_RendererFlip flip = SDL_FLIP_NONE;
-    SDL_RenderCopyEx(game->renderer, imageTexture, &srcrect, &dstrect, angle, NULL, flip);
-    SDL_RenderPresent(game->renderer);
-    SDL_Delay(50);
-    srcrect.x = 64;
-    SDL_RenderCopyEx(game->renderer, imageTexture, &srcrect, &dstrect, angle, NULL, flip);
-    SDL_RenderPresent(game->renderer);
-    SDL_Delay(50);
-    srcrect.x = 128;
-    SDL_RenderCopyEx(game->renderer, imageTexture, &srcrect, &dstrect, angle, NULL, flip);
-    SDL_RenderPresent(game->renderer);
-    SDL_Delay(50);
+
+    if (game->frame >= 0 && game->frame < 5){
+        SDL_RenderCopyEx(game->renderer, imageTexture, &srcrect, &dstrect, angle, NULL, flip);
+        SDL_RenderPresent(game->renderer);
+    } else if (game->frame >= 5 && game->frame < 10) {
+        srcrect.x = 64;
+        SDL_RenderCopyEx(game->renderer, imageTexture, &srcrect, &dstrect, angle, NULL, flip);
+        SDL_RenderPresent(game->renderer);
+    } else if (game->frame >= 10 && game->frame <= 15) {
+        srcrect.x = 128;
+        SDL_RenderCopyEx(game->renderer, imageTexture, &srcrect, &dstrect, angle, NULL, flip);
+        SDL_RenderPresent(game->renderer);
+    }
 }
 
 void spawn_monster(struct entity *enemy) {
@@ -136,15 +138,16 @@ void update_player_action(SDL_Keycode key, int state, struct entity *player) {
             player->left = state;
             break;
         case SDLK_j:
-            player->attack = state;
+            player->attack = TRUE;
             break;
     }
 }
 
 void read_player_interactions(SDL_Event event, struct entity *player) {
     SDL_Keycode key = event.key.keysym.sym;
-    if (event.type == SDL_KEYDOWN)
+    if (event.type == SDL_KEYDOWN) {
         update_player_action(key, TRUE, player);
+    }
     if (event.type == SDL_KEYUP)
         update_player_action(key, FALSE, player);
 }
@@ -244,10 +247,16 @@ void update(struct game *game, struct entity *player, struct entity monsters[]) 
     // logic to keep a fixed timestamp
     // must waste some time until we reach the target time
     int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - game->last_frame_time);
-    if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME)
+    if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
         SDL_Delay(time_to_wait);
+        game->frame++;
+        game->seconds++;
+        if (game->frame >= 100)
+            game->frame = 0;
+    }
     // get a delta time factor to update objects
     float delta_time = (SDL_GetTicks() - game->last_frame_time) / 1000.0;
+    if (!player->attack) {
     if (player->up)
         player->position.y -= PLAYER_SPEED * delta_time;
     if (player->down)
@@ -256,13 +265,20 @@ void update(struct game *game, struct entity *player, struct entity monsters[]) 
         player->position.x -= PLAYER_SPEED * delta_time;
     if (player->right)
         player->position.x += PLAYER_SPEED * delta_time;
+    }
     if (player->attack && (player->up ^ player->down ^ player->left ^ player->right)) {
-        for (int i=0; i<MONSTER_CAP; i++) {
-            check_monster_hit(&monsters[i], player);
-            if (monsters[i].lives <= 0) {
-                monsters[i].alive = FALSE;
+        if (game->frame > 15)
+            game->frame = 0;
+        if (game->frame <= 2) {
+            for (int i=0; i<MONSTER_CAP; i++) {
+                check_monster_hit(&monsters[i], player);
+                if (monsters[i].lives <= 0) {
+                    monsters[i].alive = FALSE;
+                }
             }
         }
+        if (game->frame >= 15 && game->frame < 20)
+            player->attack = FALSE;
     }
     int seconds = SDL_GetTicks() / 250;
     int sprite = seconds % 3;
@@ -283,9 +299,10 @@ void update(struct game *game, struct entity *player, struct entity monsters[]) 
         if (monsters[i].alive == TRUE)
             update_monster_tracking(player , monsters, i, sprite, delta_time);
     }
-    seconds = SDL_GetTicks() / 1000;
-    sprite = seconds % 1000;
+
     int lost = FALSE;
+    if (game->frame <= 0) {
+
     for (int i=0; i<MONSTER_CAP; i++) {
         if (is_inside_rectangle(
             player->position.x+32,
@@ -295,12 +312,9 @@ void update(struct game *game, struct entity *player, struct entity monsters[]) 
             monsters[i].position.w,
             monsters[i].position.h
         )) {
-            lost = TRUE;
+            player->lives --;
         }
     }
-    if (lost == TRUE && sprite == 999) {
-        player->lives--;
-        lost = FALSE;
     }
 }
 
@@ -398,7 +412,7 @@ int main() {
             monsters[i].texture_name = "./assets/imgs/skeleton.png";
     }
     struct entity monster;
-    for (int i=0; i<10; i++) {
+    for (int i=0; i<20; i++) {
         int randw = rand() % WINDOW_WIDTH + 1;
         int randh = rand() % WINDOW_HEIGHT + 1;
         monsters[i].alive = TRUE;

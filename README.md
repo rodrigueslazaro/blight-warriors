@@ -1,3 +1,3 @@
-# P0NG!
+# Blight Warriors!
 
-Pong game in C using SDL2 library.
+Top-down hack-and-slash game!

@@ -3,6 +3,8 @@
 #include <SDL2/SDL_ttf.h>
 
 struct game {
+    int frame;
+    int seconds;
     int is_running;
     int is_active;
     float ball_multiplier;
@@ -24,5 +26,6 @@ struct game newGame() {
     newG.font = NULL;
     newG.window = NULL;
     newG.renderer = NULL;
+    newG.frame = 0;
     return newG;
 };
