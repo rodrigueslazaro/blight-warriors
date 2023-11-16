@@ -2,11 +2,15 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
+#include <time.h>
+#include <stdlib.h>
 #include "./constants.h"
 #include "./game.h"
 #include "./player.h"
 #include "./ball.h"
 #include "./darr.h"
+
+
 
 int initialize_window(struct game *game) {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -76,15 +80,15 @@ void render_attack(struct game *game, struct entity *player) {
     SDL_RendererFlip flip = SDL_FLIP_NONE;
     SDL_RenderCopyEx(game->renderer, imageTexture, &srcrect, &dstrect, angle, NULL, flip);
     SDL_RenderPresent(game->renderer);
-    SDL_Delay(100);
+    SDL_Delay(50);
     srcrect.x = 64;
     SDL_RenderCopyEx(game->renderer, imageTexture, &srcrect, &dstrect, angle, NULL, flip);
     SDL_RenderPresent(game->renderer);
-    SDL_Delay(100);
+    SDL_Delay(50);
     srcrect.x = 128;
     SDL_RenderCopyEx(game->renderer, imageTexture, &srcrect, &dstrect, angle, NULL, flip);
     SDL_RenderPresent(game->renderer);
-    SDL_Delay(100);
+    SDL_Delay(50);
 }
 
 void spawn_monster(struct entity *enemy) {
@@ -188,7 +192,55 @@ void check_monster_hit(struct entity *monster, struct entity *player) {
     }
 }
 
-void update(struct game *game, struct entity *player, struct entity *monster) {
+int is_inside_rectangle(int a, int b, int x, int y, int w, int h) {
+    if (a >= x && a <= x + w && b >= y && b <= y + h)
+        return TRUE;
+    return FALSE;
+}
+
+int is_not_colliding(struct entity monsters[], int i, int pos_increment) {
+    int x = monsters[i].position.x+32 + pos_increment;
+    int y = monsters[i].position.y+32 + pos_increment;
+    for (int j=0; j<MONSTER_CAP; j++) {
+        if (j != i && monsters[j].alive) {
+        if (is_inside_rectangle(x, y,
+                                monsters[j].position.x,
+                                monsters[j].position.y,
+                                monsters[j].position.w,
+                                monsters[j].position.h))
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+void update_monster_tracking(struct entity *player, struct entity monsters[], int i, int sprite, float delta_time) {
+    monsters[i].texture.x = sprite * 64;
+    // monster->texture.x = sprite * 0;
+    monsters[i].up = FALSE;
+    monsters[i].right = FALSE;
+    monsters[i].down = FALSE;
+    monsters[i].left = FALSE;
+    int pos_increment = PLAYER_SPEED/2*delta_time;
+    if (player->position.x >= monsters[i].position.x && is_not_colliding(monsters, i, pos_increment)) {
+        monsters[i].right = TRUE;
+        monsters[i].position.x += pos_increment;
+    }
+    if (player->position.x < monsters[i].position.x && is_not_colliding(monsters, i, -pos_increment)) {
+        monsters[i].left = TRUE;
+        monsters[i].position.x -= pos_increment;
+    }
+    if (player->position.y >= monsters[i].position.y && is_not_colliding(monsters, i, pos_increment)) {
+        monsters[i].down = TRUE;
+        monsters[i].position.y += pos_increment;
+    }
+    if (player->position.y < monsters[i].position.y && is_not_colliding(monsters, i, -pos_increment)) {
+        monsters[i].up = TRUE;
+        monsters[i].position.y -= pos_increment;
+    }   
+}
+
+void update(struct game *game, struct entity *player, struct entity monsters[]) {
     // logic to keep a fixed timestamp
     // must waste some time until we reach the target time
     int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - game->last_frame_time);
@@ -196,9 +248,6 @@ void update(struct game *game, struct entity *player, struct entity *monster) {
         SDL_Delay(time_to_wait);
     // get a delta time factor to update objects
     float delta_time = (SDL_GetTicks() - game->last_frame_time) / 1000.0;
-    char str[10];
-    sprintf(str, "%d", monster->lives);
-    strcpy(game->message, str);
     if (player->up)
         player->position.y -= PLAYER_SPEED * delta_time;
     if (player->down)
@@ -208,13 +257,13 @@ void update(struct game *game, struct entity *player, struct entity *monster) {
     if (player->right)
         player->position.x += PLAYER_SPEED * delta_time;
     if (player->attack && (player->up ^ player->down ^ player->left ^ player->right)) {
-        render_attack(game, player);
-        check_monster_hit(monster, player);
-        if (monster->lives <= 0) {
-            monster->alive = FALSE;
+        for (int i=0; i<MONSTER_CAP; i++) {
+            check_monster_hit(&monsters[i], player);
+            if (monsters[i].lives <= 0) {
+                monsters[i].alive = FALSE;
+            }
         }
     }
-
     int seconds = SDL_GetTicks() / 250;
     int sprite = seconds % 3;
     if (player->up || player->right || player->down || player->left) {
@@ -230,30 +279,28 @@ void update(struct game *game, struct entity *player, struct entity *monster) {
     } else {
         player->texture.y = sprite * 0;
     }
-    if (monster->alive) {
-        monster->texture.x = sprite * 64;
-    } else {
-        monster->texture.x = sprite * 0;
+    for (int i=0; i<MONSTER_CAP; i++) {
+        if (monsters[i].alive == TRUE)
+            update_monster_tracking(player , monsters, i, sprite, delta_time);
     }
-    monster->up = FALSE;
-    monster->right = FALSE;
-    monster->down = FALSE;
-    monster->left = FALSE;
-    if (player->position.x >= monster->position.x) {
-        monster->right = TRUE;
-        monster->position.x += PLAYER_SPEED/2 * delta_time;
+    seconds = SDL_GetTicks() / 1000;
+    sprite = seconds % 1000;
+    int lost = FALSE;
+    for (int i=0; i<MONSTER_CAP; i++) {
+        if (is_inside_rectangle(
+            player->position.x+32,
+            player->position.y+32,
+            monsters[i].position.x,
+            monsters[i].position.y,
+            monsters[i].position.w,
+            monsters[i].position.h
+        )) {
+            lost = TRUE;
+        }
     }
-    if (player->position.x < monster->position.x) {
-        monster->left = TRUE;
-        monster->position.x -= PLAYER_SPEED/2 * delta_time;
-    }
-    if (player->position.y >= monster->position.y) {
-        monster->down = TRUE;
-        monster->position.y += PLAYER_SPEED/2 * delta_time;
-    }
-    if (player->position.y < monster->position.y) {
-        monster->up = TRUE;
-        monster->position.y -= PLAYER_SPEED/2 * delta_time;
+    if (lost == TRUE && sprite == 999) {
+        player->lives--;
+        lost = FALSE;
     }
 }
 
@@ -271,6 +318,7 @@ void setup(struct entity *player, struct entity *monster) {
     player->texture.w = 64;
     player->texture.h = 80;
     player->alive = TRUE;
+    player->lives = 10;
     player->texture_name = "./assets/imgs/player.png";
     monster->up = FALSE;
     monster->down = FALSE;
@@ -295,8 +343,8 @@ void render_message(struct game *game) {
     SDL_Texture* textTexture = SDL_CreateTextureFromSurface(game->renderer, textSurface);
 
     SDL_Rect textRect;
-    textRect.x = WINDOW_WIDTH/2-textSurface->w/2; // X-coordinate
-    textRect.y = WINDOW_HEIGHT/2; // Y-coordinate
+    textRect.x = 10; // X-coordinate
+    textRect.y = 10; // Y-coordinate
     textRect.w = textSurface->w;
     textRect.h = textSurface->h;
     SDL_RenderCopy(game->renderer, textTexture, NULL, &textRect);
@@ -309,13 +357,17 @@ void render_entity(struct game *game, struct entity entity) {
     SDL_RenderCopy(game->renderer, imageTexture, &entity.texture, &entity.position);
 }
 
-void render(struct game *game, struct entity player, struct entity monster) {
+void render(struct game *game, struct entity player, struct entity monsters[]) {
     SDL_SetRenderDrawColor(game->renderer, 0, 0, 0, 255);
     SDL_RenderClear(game->renderer); 
     if (player.alive)
         render_entity(game, player);
-    if (monster.alive)
-        render_entity(game, monster);
+    for (int i=0; i<MONSTER_CAP; i++) {
+        if (monsters[i].alive)
+            render_entity(game, monsters[i]);
+    }
+    if (player.attack && (player.up ^ player.down ^ player.left ^ player.right))
+        render_attack(game, &player);
     render_message(game);
     SDL_RenderPresent(game->renderer);
 }
@@ -330,22 +382,32 @@ int main() {
     struct game game = newGame();
     game.is_running = initialize_window(&game);
     game.font = TTF_OpenFont("./assets/fonts/bigblue.ttf", 24); // You need a .ttf file for your font
-    // dynamic_array *enemies = dynamic_array_create(sizeof(struct enemy));
-    // SDL_Rect p = {50, 50, 192, 64};
-    // SDL_Rect t = {0, 0, 192, 64};
-    // struct enemy e = newEnemy(p, t);
-    // dynamic_array_push_back(enemies, &e);
-    // SDL_Rect p = {50, 50, 192, 64};
-    // SDL_Rect t = {0, 0, 192, 64};
-    // struct enemy enemies[100];
-    // for (int i=0; i<100; i++) {
-    //     struct enemy e = newEnemy(p, t);
-    //     enemies[i] = e;
-    // }
+    srand(time(NULL));
+    int randomNumber = rand() % 3;
+    struct entity monsters[MONSTER_CAP];
+    for (int i=0; i<MONSTER_CAP; i++) {
+        randomNumber = rand() % 4;
+        monsters[i] = newMonster();
+        if (randomNumber == 0)
+            monsters[i].texture_name = "./assets/imgs/imp.png";
+        if (randomNumber == 1)
+            monsters[i].texture_name = "./assets/imgs/frog.png";
+        if (randomNumber == 2)
+            monsters[i].texture_name = "./assets/imgs/ghost.png";
+        if (randomNumber == 3)
+            monsters[i].texture_name = "./assets/imgs/skeleton.png";
+    }
     struct entity monster;
-
+    for (int i=0; i<10; i++) {
+        int randw = rand() % WINDOW_WIDTH + 1;
+        int randh = rand() % WINDOW_HEIGHT + 1;
+        monsters[i].alive = TRUE;
+        monsters[i].position.x = randw;
+        monsters[i].position.y = randh;
+    }
     struct entity player;
     setup(&player, &monster);
+    char str[10];
 
     while (game.is_running) {
         process_input(&game, &player);
@@ -354,15 +416,16 @@ int main() {
                 strcpy(game.message, "Welcome to the Blight!");
                 break;
             case 1:
-                strcpy(game.message, "");
+                sprintf(str, "%d", player.lives);
+                strcpy(game.message, str);
                 game.last_frame_time = SDL_GetTicks(); // time since game began
-                update(&game, &player, &monster);
+                update(&game, &player, monsters);
                 break;
             case 2:
                 strcpy(game.message, "[PAUSED]");
                 break;
         }
-        render(&game, player, monster);
+        render(&game, player, monsters);
     }
 
     destroy_window(&game);
