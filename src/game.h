@@ -1,6 +1,10 @@
+#ifndef GAME_H
+#define GAME_H
+
 #include "./constants.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_image.h>
 
 struct game {
     int frame;
@@ -16,16 +20,8 @@ struct game {
     SDL_Renderer *renderer;
 };
 
-struct game newGame() {
-    struct game newG;
-    newG.ball_multiplier = 1;
-    newG.last_frame_time = 0;
-    newG.game_state = 0;
-    strcpy(newG.message, "");
-    newG.is_active = FALSE;
-    newG.font = NULL;
-    newG.window = NULL;
-    newG.renderer = NULL;
-    newG.frame = 0;
-    return newG;
-};
+struct game new_game();
+int initialize_window(struct game *game);
+void destroy_window(struct game *game);
+
+#endif
