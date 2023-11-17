@@ -6,6 +6,10 @@
 #include <stdlib.h>
 #include <time.h>
 
+enum entity_type {
+    player, monster, attack, background
+};
+
 typedef struct {
     int up;
     int right;
@@ -21,16 +25,25 @@ typedef struct {
 } animation;
 
 typedef struct {
+    int damage;
+    int attack;
+    int ability;
+} cooldown;
+
+typedef struct {
     orientation orientation;
     animation animation;
-    int attack;
+    enum entity_type type; 
     int alive;
     int lives;
+    cooldown cooldown;
     SDL_Rect position;
     SDL_Rect texture;
 } entity;
 
 entity new_monster();
 entity new_player();
+entity new_attack();
+entity new_background();
 
 #endif

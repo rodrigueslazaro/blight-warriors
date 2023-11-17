@@ -30,7 +30,7 @@ int main() {
         if (randomNumber == 3)
             monsters[i].animation.texture = "./assets/imgs/skeleton.png";
     }
-    for (int i=0; i<20; i++) {
+    for (int i=0; i<3; i++) {
         int randw = rand() % WINDOW_WIDTH + 1;
         int randh = rand() % WINDOW_HEIGHT + 1;
         monsters[i].alive = TRUE;
@@ -38,6 +38,8 @@ int main() {
         monsters[i].position.y = randh;
     }
     entity player = new_player();
+    entity attack = new_attack();
+    entity background = new_background();
     char str[10];
 
     while (game.is_running) {
@@ -50,13 +52,13 @@ int main() {
                 sprintf(str, "%d", player.lives);
                 strcpy(game.message, str);
                 game.last_frame_time = SDL_GetTicks(); // time since game began
-                update(&game, &player, monsters);
+                update(&game, &player, &attack, monsters);
                 break;
             case 2:
                 strcpy(game.message, "[PAUSED]");
                 break;
         }
-        render(&game, player, monsters);
+        render(game, player, attack, monsters, background);
     }
 
     destroy_window(&game);

@@ -23,9 +23,9 @@ void read_ui_interactions(SDL_Event event, game *game) {
 
 void read_player_interactions(SDL_Event event, entity *player) {
     SDL_Keycode key = event.key.keysym.sym;
-    if (event.type == SDL_KEYDOWN) {
-        update_player_action(key, TRUE, player);
-    }
+    if (player->cooldown.attack == 0)
+        if (event.type == SDL_KEYDOWN)
+            update_player_action(key, TRUE, player);
     if (event.type == SDL_KEYUP)
         update_player_action(key, FALSE, player);
 }
@@ -54,7 +54,8 @@ void update_player_action(SDL_Keycode key, int state, entity *player) {
             player->orientation.left = state;
             break;
         case SDLK_j:
-            player->attack = TRUE;
+            if (player->cooldown.attack == 0 && (player->orientation.up ^ player->orientation.right ^player->orientation.down ^ player->orientation.left ))
+                player->cooldown.attack = 15;
             break;
     }
 }

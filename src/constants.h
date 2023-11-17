@@ -7,6 +7,7 @@
 #define FPS 100
 #define FRAME_TARGET_TIME (1000/FPS)
 
-#define PLAYER_SPEED 300
+#define PLAYER_SPEED 350
+#define PLAYER_SPEED_D 330
 
 #define MONSTER_CAP 100
