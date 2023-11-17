@@ -48,10 +48,10 @@ void render_entity(game game, entity entity) {
     }
 }
 
-void render(game game, entity player, entity attack, entity monsters[], entity background) {
+void render(game game, entity player, entity attack, entity monsters[], entity pods[], entity background) {
     SDL_SetRenderDrawColor(game.renderer, 0, 0, 0, 255);
     SDL_RenderClear(game.renderer); 
-    render_entity(game, background);
+    // render_entity(game, background);
     if (player.alive) {
         render_entity(game, player);
         if (player.cooldown.attack > 0) {
@@ -61,6 +61,8 @@ void render(game game, entity player, entity attack, entity monsters[], entity b
     for (int i=0; i<MONSTER_CAP; i++) {
         if (monsters[i].alive)
             render_entity(game, monsters[i]);
+        if (pods[i].alive)
+            render_entity(game, pods[i]);
     }
     render_message(game);
     SDL_RenderPresent(game.renderer);

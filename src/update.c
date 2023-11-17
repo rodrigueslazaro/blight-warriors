@@ -10,7 +10,7 @@ void update_monster_tracking(entity *player, entity monsters[], float delta_time
             monsters[i].orientation.right = FALSE;
             monsters[i].orientation.down = FALSE;
             monsters[i].orientation.left = FALSE;
-            int pos_increment = PLAYER_SPEED/2*delta_time;
+            int pos_increment = MONSTER_SPEED * delta_time;
             if (player->position.x >= monsters[i].position.x) {
                 monsters[i].orientation.right = TRUE;
                 monsters[i].position.x += pos_increment;
@@ -94,16 +94,16 @@ void update_player_movement(entity *player, game *game) {
     }
 }
 
-void update_player_attack(entity *player, game *game, entity monsters[]) {
-    if (game->frame > 15)
-        game->frame = 0;
-    if (game->frame <= 2) {
-        for (int i=0; i<MONSTER_CAP; i++) {
-            if (monsters[i].alive) {
-                check_monster_hit(&monsters[i], player);
-                if (monsters[i].lives <= 0) {
-                    monsters[i].alive = FALSE;
-                }
+void update_player_attack(entity *player, game *game, entity monsters[], entity pods[]) {
+    for (int i=0; i<MONSTER_CAP; i++) {
+        if (monsters[i].alive) {
+            check_monster_hit(&monsters[i], player);
+            check_monster_hit(&pods[i], player);
+            if (monsters[i].lives <= 0) {
+                monsters[i].alive = FALSE;
+            }
+            if (pods[i].lives <= 0) {
+                pods[i].alive = FALSE;
             }
         }
     }
@@ -130,9 +130,9 @@ void update_attack_animation(entity *player, entity *attack) {
         attack->position.x = player->position.x + 30;
         attack->position.y = player->position.y + 10;
     }
-    if (player->cooldown.attack > 10) {
+    if (player->cooldown.attack > 6) {
         attack->texture.x = 0;
-    } else if (player->cooldown.attack > 5) {
+    } else if (player->cooldown.attack > 3) {
         attack->texture.x = 64;
     } else if (player->cooldown.attack > 0) {
         attack->texture.x = 128;
@@ -144,13 +144,13 @@ void update_attack_animation(entity *player, entity *attack) {
     }
 }
 
-void update_player_actions(entity *player, entity *attack, game *game, entity monsters[]) {
+void update_player_actions(entity *player, entity *attack, game *game, entity monsters[], entity pods[]) {
     if (player->cooldown.damage > 0) {
         player->cooldown.damage--;
     }
     if (player->cooldown.attack > 0) {
         player->cooldown.attack--;
-        update_player_attack(player, game, monsters);
+        update_player_attack(player, game, monsters, pods);
         update_attack_animation(player, attack);
     }
 }
@@ -194,14 +194,44 @@ void check_player_monster_hit(entity *player, game *game, entity monsters[]) {
     }
 }
 
-void update(game *game, entity *player, entity *attack, entity monsters[]) {
+void update_monster_pods(game *game, entity monsters[], entity pods[]) {
+    srand(time(NULL));
+    int r = rand() % 100;
+    for (int i=0; i<MONSTER_CAP; i++) {
+        if (pods[i].alive) {
+            if (game->frame % 2 == 0) {
+                if (!monsters[r].alive) {
+                    monsters[r].alive = TRUE;
+                    if (r >= 5) {
+                        monsters[r].position.x = pods[i].position.x + r*2;
+                        monsters[r].position.y = pods[i].position.y + r*2;
+                        monsters[r].animation.texture = "./assets/imgs/skeleton.png";
+                    } else {
+                        monsters[r].position.x = pods[i].position.x - r*2;
+                        monsters[r].position.y = pods[i].position.y - r*2;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void update(game *game, entity *player, entity *attack, entity monsters[], entity pods[]) {
     await_frames(game);
+    update_monster_pods(game, monsters, pods);
     if (player->cooldown.attack == 0) {
         update_player_movement(player, game);
         update_player_movement_animation(player);
     }
-    update_player_actions(player, attack, game, monsters);
-    update_monster_tracking(player , monsters, game->delta_time);
-    check_player_monster_hit(player, game, monsters);
+    update_player_actions(player, attack, game, monsters, pods);
+    if (game->frame % 2 == 0) {
+        update_monster_tracking(player , monsters, game->delta_time);
+        check_player_monster_hit(player, game, monsters);
+    }
+    int seconds = SDL_GetTicks() / 250;
+    int sprite = seconds % 3;
+    for (int i=0; i<MONSTER_CAP; i++)
+        if (pods[i].alive == TRUE)
+            pods[i].texture.x = sprite * 64;
 }
 

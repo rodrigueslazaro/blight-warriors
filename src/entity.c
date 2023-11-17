@@ -23,6 +23,34 @@ entity new_monster() {
     newm.cooldown.damage = 0;
     newm.cooldown.attack = 0;
     newm.cooldown.ability = 0;
+    newm.animation.texture = "./assets/imgs/imp.png";
+    return newm;
+}
+
+entity new_pod() {
+    entity newm;
+    newm.type = monster;
+    newm.orientation.up = FALSE;
+    newm.orientation.right = FALSE;
+    newm.orientation.down = FALSE;
+    newm.orientation.left = FALSE;
+    newm.alive = FALSE;
+    newm.lives = 50;
+    newm.position.x = WINDOW_WIDTH/2;
+    newm.position.y = WINDOW_HEIGHT/2;
+    newm.position.w = 64;
+    newm.position.h = 64;
+    newm.texture.x = 0;
+    newm.texture.y = 0;
+    newm.texture.w = 64;
+    newm.texture.h = 64;   
+    newm.animation.frames = 100;
+    newm.animation.init = 0;
+    newm.animation.sprites = 3;
+    newm.cooldown.damage = 0;
+    newm.cooldown.attack = 0;
+    newm.cooldown.ability = 0;
+    newm.animation.texture = "./assets/imgs/pod.png";
     return newm;
 }
 

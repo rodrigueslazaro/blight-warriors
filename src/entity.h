@@ -7,7 +7,7 @@
 #include <time.h>
 
 enum entity_type {
-    player, monster, attack, background
+    player, monster, attack, background, pod
 };
 
 typedef struct {
@@ -45,5 +45,6 @@ entity new_monster();
 entity new_player();
 entity new_attack();
 entity new_background();
+entity new_pod();
 
 #endif

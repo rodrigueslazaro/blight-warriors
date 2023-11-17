@@ -55,7 +55,7 @@ void update_player_action(SDL_Keycode key, int state, entity *player) {
             break;
         case SDLK_j:
             if (player->cooldown.attack == 0 && (player->orientation.up ^ player->orientation.right ^player->orientation.down ^ player->orientation.left ))
-                player->cooldown.attack = 15;
+                player->cooldown.attack = 9;
             break;
     }
 }
