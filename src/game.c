@@ -1,8 +1,7 @@
 #include "game.h"
 
-struct game new_game() {
-    struct game newG;
-    newG.ball_multiplier = 1;
+game new_game() {
+    game newG;
     newG.last_frame_time = 0;
     newG.game_state = 0;
     strcpy(newG.message, "");
@@ -14,7 +13,7 @@ struct game new_game() {
     return newG;
 };
 
-int initialize_window(struct game *game) {
+int initialize_window(game *game) {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         fprintf(stderr, "Error intializing SDL.\n");
         return FALSE;
@@ -54,7 +53,7 @@ int initialize_window(struct game *game) {
     return TRUE;
 }
 
-void destroy_window(struct game *game) {
+void destroy_window(game *game) {
     SDL_DestroyRenderer(game->renderer);
     SDL_DestroyWindow(game->window);
     SDL_Quit();

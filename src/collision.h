@@ -3,8 +3,8 @@
 
 #include "entity.h"
 
-void check_monster_hit(struct entity *monster, struct entity *player);
+void check_monster_hit(entity *monster, entity *player);
 int is_inside_rectangle(int a, int b, int x, int y, int w, int h);
-int is_not_colliding(struct entity monsters[], int i, int pos_increment);
+int is_not_colliding(entity monsters[], int i, int pos_increment);
 
 #endif

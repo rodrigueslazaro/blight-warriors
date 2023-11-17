@@ -1,6 +1,6 @@
 #include "renderer.h"
 
-void render_message(struct game *game) {
+void render_message(game *game) {
     SDL_Color textColor = {255, 255, 255};
     SDL_Surface* textSurface = TTF_RenderText_Solid(game->font, game->message, textColor);
     SDL_Texture* textTexture = SDL_CreateTextureFromSurface(game->renderer, textSurface);
@@ -13,14 +13,14 @@ void render_message(struct game *game) {
     SDL_RenderCopy(game->renderer, textTexture, NULL, &textRect);
 }
 
-void render_entity(struct game *game, struct entity entity) {
+void render_entity(game *game, entity entity) {
     SDL_Surface *imageSurface = IMG_Load(entity.animation.texture);
     SDL_Texture *imageTexture = SDL_CreateTextureFromSurface(game->renderer, imageSurface);
     SDL_FreeSurface(imageSurface);
     SDL_RenderCopy(game->renderer, imageTexture, &entity.texture, &entity.position);
 }
 
-void render(struct game *game, struct entity player, struct entity monsters[]) {
+void render(game *game, entity player, entity monsters[]) {
     SDL_SetRenderDrawColor(game->renderer, 0, 0, 0, 255);
     SDL_RenderClear(game->renderer); 
     if (player.alive)
@@ -35,7 +35,7 @@ void render(struct game *game, struct entity player, struct entity monsters[]) {
     SDL_RenderPresent(game->renderer);
 }
 
-void render_attack(struct game *game, struct entity *player) {
+void render_attack(game *game, entity *player) {
     SDL_Surface *imageSurface = IMG_Load("./assets/imgs/attack.png");
     SDL_Texture *imageTexture = SDL_CreateTextureFromSurface(game->renderer, imageSurface);
     SDL_FreeSurface(imageSurface);
@@ -74,4 +74,38 @@ void render_attack(struct game *game, struct entity *player) {
         SDL_RenderCopyEx(game->renderer, imageTexture, &srcrect, &dstrect, angle, NULL, flip);
         SDL_RenderPresent(game->renderer);
     }
+}
+
+void init_stack(animastack *stack, int initialCapacity) {
+    stack->frames = (animation *)malloc(initialCapacity * sizeof(animation));
+    if (stack->frames == NULL) {
+        printf("Memory allocation failed.\n");
+        exit(1);
+    }
+    stack->capacity = initialCapacity;
+    stack->size = 0;
+}
+
+void push_frame(animastack *stack, animation frame) {
+    if (stack->size >= stack->capacity) {
+        stack->capacity *= 2;
+        stack->frames = (animation *)realloc(stack->frames, stack->capacity * sizeof(animation));
+        if (stack->frames == NULL) {
+            printf("Memory allocation failed.\n");
+            exit(1);
+        }
+    }
+    stack->frames[stack->size++] = frame;
+}
+
+animation pop_frame(animastack *stack) {
+    if (stack->size <= 0) {
+        printf("Stack underflow.\n");
+        exit(1);
+    }
+    return stack->frames[--stack->size];
+}
+
+void free_stack(animastack *stack) {
+    free(stack->frames);
 }

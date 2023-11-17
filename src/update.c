@@ -1,6 +1,6 @@
 #include "update.h"
 
-void update_monster_tracking(struct entity *player, struct entity monsters[], int i, int sprite, float delta_time) {
+void update_monster_tracking(entity *player, entity monsters[], int i, int sprite, float delta_time) {
     monsters[i].texture.x = sprite * 64;
     // monster->texture.x = sprite * 0;
     monsters[i].orientation.up = FALSE;
@@ -26,9 +26,7 @@ void update_monster_tracking(struct entity *player, struct entity monsters[], in
     }   
 }
 
-void update(struct game *game, struct entity *player, struct entity monsters[]) {
-    // logic to keep a fixed timestamp
-    // must waste some time until we reach the target time
+void await_frames(game *game) {
     int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - game->last_frame_time);
     if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
         SDL_Delay(time_to_wait);
@@ -37,32 +35,48 @@ void update(struct game *game, struct entity *player, struct entity monsters[]) 
         if (game->frame >= 100)
             game->frame = 0;
     }
-    // get a delta time factor to update objects
-    float delta_time = (SDL_GetTicks() - game->last_frame_time) / 1000.0;
-    if (!player->attack) {
+    game->delta_time = (SDL_GetTicks() - game->last_frame_time) / 1000.0;
+}
+
+void update_player_movement(entity *player, game *game) {
     if (player->orientation.up)
-        player->position.y -= PLAYER_SPEED * delta_time;
+        player->position.y -= PLAYER_SPEED * game->delta_time;
     if (player->orientation.down)
-        player->position.y += PLAYER_SPEED * delta_time;
+        player->position.y += PLAYER_SPEED * game->delta_time;
     if (player->orientation.left)
-        player->position.x -= PLAYER_SPEED * delta_time;
+        player->position.x -= PLAYER_SPEED * game->delta_time;
     if (player->orientation.right)
-        player->position.x += PLAYER_SPEED * delta_time;
-    }
+        player->position.x += PLAYER_SPEED * game->delta_time;
+}
+
+void update_player_attack(entity *player, game *game, entity monsters[]) {
     if (player->attack && (player->orientation.up ^ player->orientation.down ^ player->orientation.left ^ player->orientation.right)) {
         if (game->frame > 15)
             game->frame = 0;
         if (game->frame <= 2) {
             for (int i=0; i<MONSTER_CAP; i++) {
-                check_monster_hit(&monsters[i], player);
-                if (monsters[i].lives <= 0) {
-                    monsters[i].alive = FALSE;
+                if (monsters[i].alive) {
+                    check_monster_hit(&monsters[i], player);
+                    if (monsters[i].lives <= 0) {
+                        monsters[i].alive = FALSE;
+                    }
                 }
             }
         }
         if (game->frame >= 15 && game->frame < 20)
             player->attack = FALSE;
     }
+}
+
+void update_player_actions(entity *player, game *game, entity monsters[]) {
+    update_player_attack(player, game, monsters);
+}
+
+void update(game *game, entity *player, entity monsters[]) {
+    await_frames(game);
+    update_player_movement(player, game);
+    update_player_actions(player, game, monsters);
+
     int seconds = SDL_GetTicks() / 250;
     int sprite = seconds % 3;
     if (player->orientation.up || player->orientation.right || player->orientation.down || player->orientation.left) {
@@ -80,7 +94,7 @@ void update(struct game *game, struct entity *player, struct entity monsters[]) 
     }
     for (int i=0; i<MONSTER_CAP; i++) {
         if (monsters[i].alive == TRUE)
-            update_monster_tracking(player , monsters, i, sprite, delta_time);
+            update_monster_tracking(player , monsters, i, sprite, game->delta_time);
     }
 
     if (game->frame <= 0) {

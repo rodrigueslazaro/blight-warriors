@@ -1,7 +1,7 @@
 #include "entity.h"
 
-struct entity new_monster() {
-    struct entity newm;
+entity new_monster() {
+    entity newm;
     newm.orientation.up = FALSE;
     newm.orientation.right = FALSE;
     newm.orientation.down = FALSE;
@@ -23,8 +23,8 @@ struct entity new_monster() {
     return newm;
 }
 
-struct entity new_player() {
-    struct entity newp;
+entity new_player() {
+    entity newp;
     newp.orientation.up = FALSE;
     newp.orientation.down = FALSE;
     newp.orientation.left = FALSE;

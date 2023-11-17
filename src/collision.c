@@ -1,6 +1,6 @@
 #include "collision.h"
 
-void check_monster_hit(struct entity *monster, struct entity *player) {
+void check_monster_hit(entity *monster, entity *player) {
     if (player->orientation.left &&
         monster->position.x+32 >= player->position.x-64 &&
         monster->position.y+32 >= player->position.y &&
@@ -41,7 +41,7 @@ int is_inside_rectangle(int a, int b, int x, int y, int w, int h) {
     return FALSE;
 }
 
-int is_not_colliding(struct entity monsters[], int i, int pos_increment) {
+int is_not_colliding(entity monsters[], int i, int pos_increment) {
     int x = monsters[i].position.x+32 + pos_increment;
     int y = monsters[i].position.y+32 + pos_increment;
     for (int j=0; j<MONSTER_CAP; j++) {

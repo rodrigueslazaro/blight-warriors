@@ -4,8 +4,13 @@
 #include "game.h"
 #include "entity.h"
 #include "collision.h"
+#include "renderer.h"
 
-void update_monster_tracking(struct entity *player, struct entity monsters[], int i, int sprite, float delta_time);
-void update(struct game *game, struct entity *player, struct entity monsters[]);
+void await_frames(game *game);
+void update_player_movement(entity *player, game *game);
+void update_player_attack(entity *player, game *game, entity monsters[]);
+void update_player_actions(entity *player, game *game, entity monsters[]);
+void update_monster_tracking(entity *player, entity monsters[], int i, int sprite, float delta_time);
+void update(game *game, entity *player, entity monsters[]);
 
 #endif

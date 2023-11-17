@@ -1,6 +1,6 @@
 #include "input.h"
 
-void read_ui_interactions(SDL_Event event, struct game *game) {
+void read_ui_interactions(SDL_Event event, game *game) {
     if (event.type == SDL_QUIT ||
        (event.type == SDL_KEYDOWN &&
         event.key.keysym.sym == SDLK_ESCAPE))
@@ -21,7 +21,7 @@ void read_ui_interactions(SDL_Event event, struct game *game) {
     }
 }
 
-void read_player_interactions(SDL_Event event, struct entity *player) {
+void read_player_interactions(SDL_Event event, entity *player) {
     SDL_Keycode key = event.key.keysym.sym;
     if (event.type == SDL_KEYDOWN) {
         update_player_action(key, TRUE, player);
@@ -30,7 +30,7 @@ void read_player_interactions(SDL_Event event, struct entity *player) {
         update_player_action(key, FALSE, player);
 }
 
-void process_input(struct game *game, struct entity *player) {
+void process_input(game *game, entity *player) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         read_ui_interactions(event, game);
@@ -39,7 +39,7 @@ void process_input(struct game *game, struct entity *player) {
 }
 
 
-void update_player_action(SDL_Keycode key, int state, struct entity *player) {
+void update_player_action(SDL_Keycode key, int state, entity *player) {
     switch (key) {
         case SDLK_w:
             player->orientation.up = state;

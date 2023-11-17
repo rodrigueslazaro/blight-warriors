@@ -12,12 +12,12 @@
 #include "input.h"
 
 int main() {
-    struct game game = new_game();
+    game game = new_game();
     game.is_running = initialize_window(&game);
     game.font = TTF_OpenFont("./assets/fonts/bigblue.ttf", 24); // You need a .ttf file for your font
     srand(time(NULL));
     int randomNumber = rand() % 3;
-    struct entity monsters[MONSTER_CAP];
+    entity monsters[MONSTER_CAP];
     for (int i=0; i<MONSTER_CAP; i++) {
         randomNumber = rand() % 4;
         monsters[i] = new_monster();
@@ -37,7 +37,7 @@ int main() {
         monsters[i].position.x = randw;
         monsters[i].position.y = randh;
     }
-    struct entity player = new_player();
+    entity player = new_player();
     char str[10];
 
     while (game.is_running) {
