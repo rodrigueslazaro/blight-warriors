@@ -11,19 +11,19 @@ void update_monster_tracking(entity *player, entity monsters[], float delta_time
             monsters[i].orientation.down = FALSE;
             monsters[i].orientation.left = FALSE;
             int pos_increment = MONSTER_SPEED * delta_time;
-            if (player->position.x >= monsters[i].position.x) {
+            if (player->position.x >= monsters[i].position.x && is_not_colliding(monsters, i, pos_increment)) {
                 monsters[i].orientation.right = TRUE;
                 monsters[i].position.x += pos_increment;
             }
-            if (player->position.x < monsters[i].position.x) {
+            if (player->position.x < monsters[i].position.x && is_not_colliding(monsters, i, pos_increment)) {
                 monsters[i].orientation.left = TRUE;
                 monsters[i].position.x -= pos_increment;
             }
-            if (player->position.y >= monsters[i].position.y) {
+            if (player->position.y >= monsters[i].position.y && is_not_colliding(monsters, i, pos_increment)) {
                 monsters[i].orientation.down = TRUE;
                 monsters[i].position.y += pos_increment;
             }
-            if (player->position.y < monsters[i].position.y) {
+            if (player->position.y < monsters[i].position.y && is_not_colliding(monsters, i, pos_increment)) {
                 monsters[i].orientation.up = TRUE;
                 monsters[i].position.y -= pos_increment;
             }   
@@ -98,12 +98,8 @@ void update_player_attack(entity *player, game *game, entity monsters[], entity 
     for (int i=0; i<MONSTER_CAP; i++) {
         if (monsters[i].alive) {
             check_monster_hit(&monsters[i], player);
-            check_monster_hit(&pods[i], player);
             if (monsters[i].lives <= 0) {
                 monsters[i].alive = FALSE;
-            }
-            if (pods[i].lives <= 0) {
-                pods[i].alive = FALSE;
             }
         }
     }
@@ -112,21 +108,25 @@ void update_player_attack(entity *player, game *game, entity monsters[], entity 
 void update_attack_animation(entity *player, entity *attack) {
     if (player->orientation.up) {
         attack->orientation.up = TRUE;
+        attack->angle = 0;
         attack->position.x = player->position.x;
         attack->position.y = player->position.y - 20;
     }
     if (player->orientation.down) {
         attack->orientation.down = TRUE;
+        attack->angle = 180;
         attack->position.x = player->position.x;
         attack->position.y = player->position.y + 50;
     }
     if (player->orientation.left) {
         attack->orientation.left = TRUE;
+        attack->angle = 270;
         attack->position.x = player->position.x - 30;
         attack->position.y = player->position.y + 10;
     }
     if (player->orientation.right) {
         attack->orientation.right = TRUE;
+        attack->angle = 90;
         attack->position.x = player->position.x + 30;
         attack->position.y = player->position.y + 10;
     }
@@ -196,19 +196,19 @@ void check_player_monster_hit(entity *player, game *game, entity monsters[]) {
 
 void update_monster_pods(game *game, entity monsters[], entity pods[]) {
     srand(time(NULL));
-    int r = rand() % 100;
+    int r = rand() % 10;
     for (int i=0; i<MONSTER_CAP; i++) {
-        if (pods[i].alive) {
+        if (pods[0].alive) {
             if (game->frame % 2 == 0) {
                 if (!monsters[r].alive) {
                     monsters[r].alive = TRUE;
                     if (r >= 5) {
-                        monsters[r].position.x = pods[i].position.x + r*2;
-                        monsters[r].position.y = pods[i].position.y + r*2;
+                        monsters[r].position.x = pods[0].position.x + r*5;
+                        monsters[r].position.y = pods[0].position.y + r*5;
                         monsters[r].animation.texture = "./assets/imgs/skeleton.png";
                     } else {
-                        monsters[r].position.x = pods[i].position.x - r*2;
-                        monsters[r].position.y = pods[i].position.y - r*2;
+                        monsters[r].position.x = pods[0].position.x - r*5;
+                        monsters[r].position.y = pods[0].position.y - r*5;
                     }
                 }
             }
@@ -233,5 +233,18 @@ void update(game *game, entity *player, entity *attack, entity monsters[], entit
     for (int i=0; i<MONSTER_CAP; i++)
         if (pods[i].alive == TRUE)
             pods[i].texture.x = sprite * 64;
+    if (player->cooldown.damage > 0) {
+        if (player->cooldown.damage >= 75) {
+            player->alpha = 200;
+        } else if (player->cooldown.damage >= 50) {
+            player->alpha = 100;
+        } else if (player->cooldown.damage >= 25) {
+            player->alpha = 200;
+        } else if (player->cooldown.damage > 0) {
+            player->alpha = 100;
+        }
+    } else {
+        player->alpha = 255;
+    }
 }
 

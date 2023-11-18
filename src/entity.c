@@ -24,6 +24,8 @@ entity new_monster() {
     newm.cooldown.attack = 0;
     newm.cooldown.ability = 0;
     newm.animation.texture = "./assets/imgs/imp.png";
+    newm.alpha = 255;
+    newm.angle = 0;
     return newm;
 }
 
@@ -51,6 +53,8 @@ entity new_pod() {
     newm.cooldown.attack = 0;
     newm.cooldown.ability = 0;
     newm.animation.texture = "./assets/imgs/pod.png";
+    newm.alpha = 255;
+    newm.angle = 0;
     return newm;
 }
 
@@ -78,6 +82,8 @@ entity new_player() {
     newp.cooldown.damage = 0;
     newp.cooldown.attack = 0;
     newp.cooldown.ability = 0;
+    newp.alpha = 255;
+    newp.angle = 0;
     return newp;
 }
 
@@ -101,6 +107,8 @@ entity new_attack() {
     newp.cooldown.damage = 0;
     newp.cooldown.attack = 0;
     newp.cooldown.ability = 0;
+    newp.alpha = 255;
+    newp.angle = 0;
     return newp;
 }
 
@@ -116,5 +124,7 @@ entity new_background() {
     newp.position.w = 1280;
     newp.position.h = 720;
     newp.animation.texture = "./assets/imgs/back.png";
+    newp.alpha = 255;
+    newp.angle = 0;
     return newp;
 }

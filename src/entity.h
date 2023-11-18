@@ -36,6 +36,8 @@ typedef struct {
     enum entity_type type; 
     int alive;
     int lives;
+    int angle;
+    int alpha;
     cooldown cooldown;
     SDL_Rect position;
     SDL_Rect texture;
