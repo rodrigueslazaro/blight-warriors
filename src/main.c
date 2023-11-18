@@ -22,11 +22,15 @@ int main() {
     entity monsters[MONSTER_CAP];
     for (int i=0; i<MONSTER_CAP; i++)
         monsters[i] = new_monster();
-    entity pods[MONSTER_CAP];
-    for (int i=0; i<MONSTER_CAP; i++)
-        pods[i] = new_pod();
+    
+    srand(time(NULL));
+    for (int i=0; i<10; i++) {
+        monsters[i].alive = TRUE;
+        monsters[i].position.x = rand() % WINDOW_WIDTH;
+        monsters[i].position.y = rand() % WINDOW_HEIGHT;
+    }
+
     char str[10];
-    pods[0].alive = TRUE;
 
     while (game.is_running) {
         process_input(&game, &player);
@@ -38,13 +42,13 @@ int main() {
                 sprintf(str, "%d", player.lives);
                 strcpy(game.message, str);
                 game.last_frame_time = SDL_GetTicks(); // time since game began
-                update(&game, &player, &attack, monsters, pods);
+                update(&game, &player, &attack, monsters);
                 break;
             case 2:
                 strcpy(game.message, "[PAUSED]");
                 break;
         }
-        render(game, player, attack, monsters, pods, background);
+        render(game, player, attack, monsters, background);
     }
 
     destroy_window(&game);

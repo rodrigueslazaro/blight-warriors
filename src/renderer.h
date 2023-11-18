@@ -9,7 +9,7 @@
 
 void render_message(game game);
 void render_entity(game game, entity entity);
-void render(game game, entity player, entity attack, entity monsters[], entity pods[], entity background);
+void render(game game, entity player, entity attack, entity monsters[], entity background);
 void render_attack(game game, entity player);
 
 #endif

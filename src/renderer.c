@@ -22,7 +22,7 @@ void render_entity(game game, entity entity) {
     SDL_RenderCopyEx(game.renderer, imageTexture, &entity.texture, &entity.position, entity.angle, NULL, flip);
 }
 
-void render(game game, entity player, entity attack, entity monsters[], entity pods[], entity background) {
+void render(game game, entity player, entity attack, entity monsters[], entity background) {
     SDL_SetRenderDrawColor(game.renderer, 0, 0, 0, 255);
     SDL_RenderClear(game.renderer); 
     render_entity(game, background);
@@ -35,8 +35,6 @@ void render(game game, entity player, entity attack, entity monsters[], entity p
     for (int i=0; i<MONSTER_CAP; i++) {
         if (monsters[i].alive)
             render_entity(game, monsters[i]);
-        if (pods[i].alive)
-            render_entity(game, pods[i]);
     }
     render_message(game);
     SDL_RenderPresent(game.renderer);
